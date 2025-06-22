@@ -1,0 +1,1998 @@
+        <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miami Superhero Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: white;
+            border-right: 2px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .sidebar-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .sidebar-header .subtitle {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+            font-size: 0.75rem;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            padding: 0;
+        }
+        
+        .sidebar-section {
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .section-header {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            font-weight: 600;
+            color: #495057;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .section-header:hover {
+            background: #e9ecef;
+        }
+        
+        .section-content {
+            padding: 15px;
+            display: block;
+        }
+        
+        .section-content.collapsed {
+            display: none;
+        }
+        
+        .collapse-icon {
+            transition: transform 0.2s;
+        }
+        
+        .collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .btn.btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .btn.btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
+        }
+        
+        .btn.btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        }
+        
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 2px;
+            width: auto;
+            display: inline-block;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .layer-tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .layer-tab {
+            padding: 6px 10px;
+            border: none;
+            background: #f8f9fa;
+            color: #495057;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 11px;
+            transition: all 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .layer-tab.active {
+            background: #2a5298;
+            color: white;
+        }
+        
+.layer-tab.gm-only {
+    color: #495057; /* Same as regular tabs */
+}
+
+.layer-tab.gm-only.active {
+    background: #2a5298; /* Same blue as player tabs */
+    color: white;
+    border: 3px solid #000;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+    font-weight: bold;
+}
+        
+        .layer-visibility {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .visibility-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 10px;
+            font-weight: 600;
+            flex: 1;
+            justify-content: center;
+        }
+        
+        .visibility-toggle.active {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .layer-actions {
+            display: flex;
+            gap: 5px;
+            align-items: stretch;
+        }
+        
+        .new-layer-input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .location-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .location-item {
+            background: #f8f9fa;
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .location-name {
+            font-weight: 600;
+            color: #2a5298;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .location-description {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .location-coords {
+            color: #999;
+            font-size: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .location-actions {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+        }
+        
+        .layer-copy-select {
+            width: 100%;
+            margin-bottom: 5px;
+            font-size: 11px;
+            padding: 4px 8px;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        
+        .category-badge.hero { background: #d4edda; color: #155724; }
+        .category-badge.villain { background: #f8d7da; color: #721c24; }
+        .category-badge.civilian { background: #d1ecf1; color: #0c5460; }
+        .category-badge.government { background: #e2d9f3; color: #493267; }
+        .category-badge.danger { background: #ffeaa7; color: #856404; }
+        .category-badge.neutral { background: #e9ecef; color: #495057; }
+        
+        .filter-controls {
+            display: flex;
+            gap: 3px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 4px 8px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8f9fa;
+            color: #495057;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .filter-btn.active {
+            border-color: currentColor;
+            transform: scale(1.02);
+        }
+        
+        .filter-btn.hero { color: #28a745; }
+        .filter-btn.hero.active { background: #d4edda; }
+        
+        .filter-btn.villain { color: #dc3545; }
+        .filter-btn.villain.active { background: #f8d7da; }
+        
+        .filter-btn.civilian { color: #007bff; }
+        .filter-btn.civilian.active { background: #d1ecf1; }
+        
+        .filter-btn.government { color: #6f42c1; }
+        .filter-btn.government.active { background: #e2d9f3; }
+        
+        .filter-btn.danger { color: #fd7e14; }
+        .filter-btn.danger.active { background: #ffeaa7; }
+        
+        .filter-btn.neutral { color: #6c757d; }
+        .filter-btn.neutral.active { background: #e9ecef; }
+        
+        .status {
+            padding: 8px;
+            margin: 8px 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .layer-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+        
+        .gm-warning {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background: white;
+            border: 1px solid #ddd;
+            border-left: none;
+            border-radius: 0 6px 6px 0;
+            padding: 8px 6px;
+            cursor: pointer;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            border-right: none;
+        }
+        
+        .sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+        
+        .location-item.selected {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+        }
+        
+        .search-highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .distance-line {
+            color: #dc3545;
+            weight: 3;
+            opacity: 0.7;
+            dashArray: '5, 10';
+        }
+        
+        .distance-popup {
+            background: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .bulk-controls {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        .bulk-controls.active {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        
+        .print-view {
+            background: white !important;
+        }
+        
+        .print-view .sidebar {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                z-index: 1001;
+                height: 100vh;
+            }
+            
+            .sidebar.collapsed {
+                width: 0;
+            }
+            
+            .map-container {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-toggle" onclick="toggleSidebar()">
+                <span id="toggleIcon">◀</span>
+            </div>
+            
+            <div class="sidebar-header">
+                <h1>🦸 Miami Superhero Map</h1>
+                <p class="subtitle">Advanced TTRPG Location Manager</p>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- Search & Add Section -->
+                <div class="sidebar-section">
+                    <div class="section-header" onclick="toggleSection('search')">
+                        <span>🔍 Search & Add Location</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                    <div class="section-content" id="search-content">
+                        <div class="form-group">
+                            <label>Search Address</label>
+                            <div class="form-row">
+                                <input type="text" id="addressInput" placeholder="Enter address..." />
+                            </div>
+                            <button class="btn" onclick="searchAddress()">🔍 Search Address</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Location Details</label>
+                            <input type="text" id="locationName" placeholder="Location name..." style="margin-bottom: 8px;" />
+                            <input type="text" id="locationDescription" placeholder="Description..." style="margin-bottom: 8px;" />
+                            <select id="markerCategory" style="margin-bottom: 8px;">
+                                <option value="hero">🦸 Hero Base</option>
+                                <option value="villain">😈 Villain Lair</option>
+                                <option value="civilian">🏢 Civilian Location</option>
+                                <option value="government">🏛️ Government</option>
+                                <option value="danger">⚠️ Danger Zone</option>
+                                <option value="neutral">📍 Neutral</option>
+                            </select>
+                            <button class="btn btn-success" onclick="addCurrentLocation()">📍 Add to Current Layer</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Layer Management Section -->
+                <div class="sidebar-section">
+                    <div class="section-header" onclick="toggleSection('layers')">
+                        <span>📋 Layer Management</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                    <div class="section-content" id="layers-content">
+                        <div class="layer-info" id="layerInfo">
+                            <strong>📋 Layer System:</strong> Organize your locations by layer. GM layers are for your eyes only, Player layers can be shared.
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Active Layer</label>
+                            <div class="layer-tabs" id="layerTabs">
+                                <!-- Layer tabs will be generated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Layer Visibility</label>
+                            <div class="layer-visibility" id="layerToggles">
+                                <!-- Layer toggles will be generated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Layer Actions</label>
+                            <div class="layer-actions">
+                                <input type="text" id="newLayerName" placeholder="New layer name..." class="new-layer-input" />
+                                <button class="btn btn-small" onclick="createLayer()">➕</button>
+                            </div>
+                            <button class="btn btn-danger" onclick="deleteCurrentLayer()">🗑️ Delete Current Layer</button>
+                            <button class="btn btn-warning" onclick="clearCurrentLayer()">🧹 Clear Layer</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Location Filter Section -->
+                <div class="sidebar-section">
+                    <div class="section-header" onclick="toggleSection('filters')">
+                        <span>🔎 Location Filters</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                    <div class="section-content" id="filters-content">
+                        <div class="form-group">
+                            <label>Filter by Type</label>
+                            <div class="filter-controls">
+                                <div class="filter-btn active" onclick="toggleFilter('all')">All</div>
+                                <div class="filter-btn hero" onclick="toggleFilter('hero')">🦸</div>
+                                <div class="filter-btn villain" onclick="toggleFilter('villain')">😈</div>
+                            </div>
+                            <div class="filter-controls">
+                                <div class="filter-btn civilian" onclick="toggleFilter('civilian')">🏢</div>
+                                <div class="filter-btn government" onclick="toggleFilter('government')">🏛️</div>
+                                <div class="filter-btn danger" onclick="toggleFilter('danger')">⚠️</div>
+                                <div class="filter-btn neutral" onclick="toggleFilter('neutral')">📍</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Locations List Section -->
+                <div class="sidebar-section">
+                    <div class="section-header" onclick="toggleSection('locations')">
+                        <span id="locationListTitle">📍 Current Layer Locations</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                    <div class="section-content" id="locations-content">
+                        <div class="location-list" id="locationList">
+                            <!-- Location list will be generated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Data Management Section -->
+                <div class="sidebar-section">
+                    <div class="section-header" onclick="toggleSection('data')">
+                        <span>💾 Data Management</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                    <div class="section-content" id="data-content">
+                        <button class="btn btn-success" onclick="exportData()">💾 Export All Data</button>
+<label class="btn btn-warning" for="importFile" style="margin: 0 0 8px 0; cursor: pointer; width: 100%; box-sizing: border-box; display: inline-block; text-align: center;">
+                            📁 Import Data
+                            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+                        </label>
+                        <button class="btn" onclick="generateShareLink()">🔗 Generate Share Link</button>
+                    </div>
+                </div>
+                
+                <!-- Map Controls Section -->
+                 
+                <div class="sidebar-section">
+                    <div class="section-header" onclick="toggleSection('mapcontrols')">
+                        <span>🗺️ Map Controls</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                    <div class="section-content" id="mapcontrols-content">
+                        <div class="input-group" style="margin-bottom: 10px;">
+    <input type="text" id="cityInput" placeholder="Enter city name (e.g., Miami, FL)" class="form-control">
+    <button class="btn" onclick="centerOnCity()" style="margin-left: 5px;">🌍 Center on City</button>
+</div>
+                        <div class="form-group">
+                            <label>Map Style</label>
+                            <select id="mapStyle" onchange="changeMapStyle()">
+                                <option value="osm">🗺️ OpenStreetMap</option>
+                                <option value="satellite">🛰️ Satellite</option>
+                                <option value="terrain">🏔️ Terrain</option>
+                                <option value="toner">🖤 Black & White</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="toggleDistanceTool()">📏 Distance Tool</button>
+                        <button class="btn" onclick="toggleBulkSelect()">☑️ Bulk Select</button>
+                        <button class="btn btn-warning" onclick="printView()">🖨️ Print View</button>
+                    </div>
+                </div>
+                
+                <!-- Location Search Section -->
+                <div class="sidebar-section">
+                    <div class="section-header" onclick="toggleSection('locationsearch')">
+                        <span>🔍 Location Search</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                    <div class="section-content" id="locationsearch-content">
+                        <div class="form-group">
+                            <label>Search Locations</label>
+                            <input type="text" id="locationSearchInput" placeholder="Search by name..." oninput="searchLocations()" />
+                            <div id="searchResults" class="location-list" style="max-height: 200px; margin-top: 10px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Custom Icons Section -->
+                <div class="sidebar-section">
+                    <div class="section-header" onclick="toggleSection('customicons')">
+                        <span>🎨 Custom Icons</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                    <div class="section-content" id="customicons-content">
+                        <div class="form-group">
+                            <label>Upload Custom Icon</label>
+                            <select id="iconCategory">
+                                <option value="hero">🦸 Hero Base</option>
+                                <option value="villain">😈 Villain Lair</option>
+                                <option value="civilian">🏢 Civilian Location</option>
+                                <option value="government">🏛️ Government</option>
+                                <option value="danger">⚠️ Danger Zone</option>
+                                <option value="neutral">📍 Neutral</option>
+                            </select>
+                            <label class="btn btn-small" for="iconUpload" style="margin: 5px 0; cursor: pointer;">
+                                📤 Upload Icon
+                                <input type="file" id="iconUpload" accept="image/*" style="display: none;" onchange="uploadCustomIcon(event)">
+                            </label>
+                            <button class="btn btn-small btn-danger" onclick="resetCategoryIcon()">🔄 Reset to Default</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="status"></div>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    
+    <script>
+        // Initialize the map centered on Miami
+const map = L.map('map').setView([20, 0], 2);
+        
+// Add simple OpenStreetMap tiles (no mapLayers complexity)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+}).addTo(map);
+
+// Map click handler for distance tool
+    map.on('click', function(e) {
+        if (distanceMode) {
+            handleDistanceClick(e.latlng);
+        }
+    });
+        
+        // Store all markers and location data with layers
+        let layers = {
+            'Player View': { markers: [], locations: [], visible: true, isGM: false },
+            'GM Only': { markers: [], locations: [], visible: true, isGM: true }
+        };
+        let currentLayer = 'Player View';
+        let currentSearchMarker = null;
+        let activeFilter = 'all';
+        let sidebarCollapsed = false;
+        let distanceMode = false;
+        let distanceStart = null;
+        let distanceLines = [];
+        let bulkSelectMode = false;
+        let selectedLocations = [];
+        let customIcons = {};
+        let currentMapStyle = 'osm';
+        let mapLayers = {};
+        
+        // Define marker styles for different categories
+        const markerStyles = {
+            hero: { color: '#28a745', emoji: '🦸', name: 'Hero Base' },
+            villain: { color: '#dc3545', emoji: '😈', name: 'Villain Lair' },
+            civilian: { color: '#007bff', emoji: '🏢', name: 'Civilian Location' },
+            government: { color: '#6f42c1', emoji: '🏛️', name: 'Government' },
+            danger: { color: '#fd7e14', emoji: '⚠️', name: 'Danger Zone' },
+            neutral: { color: '#6c757d', emoji: '📍', name: 'Neutral' }
+        };
+        
+        // Sidebar toggle functionality
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            sidebarCollapsed = !sidebarCollapsed;
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                toggleIcon.textContent = '▶';
+            } else {
+                sidebar.classList.remove('collapsed');
+                toggleIcon.textContent = '◀';
+            }
+            
+            // Trigger map resize after animation
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 300);
+        }
+        
+        // Section collapse functionality
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '-content');
+            const header = content.previousElementSibling;
+            const icon = header.querySelector('.collapse-icon');
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                header.classList.remove('collapsed');
+                icon.textContent = '▼';
+            } else {
+                content.classList.add('collapsed');
+                header.classList.add('collapsed');
+                icon.textContent = '▼';
+            }
+        }
+        
+        // Create layer management functions
+        function updateLayerTabs() {
+            const tabsContainer = document.getElementById('layerTabs');
+            const togglesContainer = document.getElementById('layerToggles');
+            
+            // Create layer tabs
+            tabsContainer.innerHTML = Object.keys(layers).map(layerName => {
+                const layer = layers[layerName];
+                const isActive = layerName === currentLayer;
+                const gmClass = layer.isGM ? 'gm-only' : '';
+                return `<div class="layer-tab ${isActive ? 'active' : ''} ${gmClass}" onclick="switchLayer('${layerName}')">
+                    ${layer.isGM ? '🔒' : '👁️'} ${layerName} (${layer.locations.length})
+                </div>`;
+            }).join('');
+            
+            // Create visibility toggles
+            togglesContainer.innerHTML = Object.keys(layers).map(layerName => {
+                const layer = layers[layerName];
+                const isVisible = layer.visible;
+                const gmClass = layer.isGM ? 'gm-only' : '';
+                return `<div class="visibility-toggle ${isVisible ? 'active' : ''} ${gmClass}" onclick="toggleLayerVisibility('${layerName}')">
+                    ${isVisible ? '👁️' : '🙈'} ${layerName}
+                </div>`;
+            }).join('');
+            
+            // Update title
+            const currentLayerData = layers[currentLayer];
+            document.getElementById('locationListTitle').textContent = 
+                `${currentLayerData.isGM ? '🔒 GM Layer' : '👁️ Player Layer'}: ${currentLayer}`;
+        }
+        
+        function switchLayer(layerName) {
+            currentLayer = layerName;
+            updateLayerTabs();
+            updateLocationList();
+            updateLayerInfo();
+        }
+        
+function createLayer() {
+    const newLayerName = document.getElementById('newLayerName').value.trim();
+    if (!newLayerName) {
+        showStatus('Please enter a layer name', 'error');
+        return;
+    }
+    
+    if (layers[newLayerName]) {
+        showStatus('Layer name already exists', 'error');
+        return;
+    }
+
+    // Ask if this should be a GM layer
+    const isGM = confirm('Should this be a GM-only layer?\n\nClick OK for GM-only, Cancel for Player-visible');
+    
+    layers[newLayerName] = {
+        markers: [],
+        locations: [],
+        visible: true,
+        isGM: isGM
+    };
+    
+    currentLayer = newLayerName;
+    document.getElementById('newLayerName').value = '';
+    updateLayerTabs();
+    updateLocationList();
+    updateLayerInfo();
+    
+    showStatus(`Created ${isGM ? 'GM-only' : 'player-visible'} layer: ${newLayerName}`, 'success');
+}
+        
+        function deleteCurrentLayer() {
+            if (Object.keys(layers).length <= 1) {
+                showStatus('Cannot delete the last remaining layer', 'error');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete the "${currentLayer}" layer and all its locations?`)) {
+                // Remove all markers from map
+                layers[currentLayer].markers.forEach(marker => map.removeLayer(marker));
+                
+                // Delete the layer
+                delete layers[currentLayer];
+                
+                // Switch to first available layer
+                currentLayer = Object.keys(layers)[0];
+                
+                updateLayerTabs();
+                updateLocationList();
+                updateLayerInfo();
+                
+                showStatus('Layer deleted successfully', 'success');
+            }
+        }
+        
+        function toggleLayerVisibility(layerName) {
+            const layer = layers[layerName];
+            layer.visible = !layer.visible;
+            
+            // Show/hide markers on map
+            layer.markers.forEach(marker => {
+                if (layer.visible) {
+                    marker.addTo(map);
+                } else {
+                    map.removeLayer(marker);
+                }
+            });
+            
+            updateLayerTabs();
+        }
+        
+        function clearCurrentLayer() {
+            if (layers[currentLayer].locations.length === 0) {
+                showStatus('No locations to clear in this layer', 'error');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to remove all locations from "${currentLayer}"?`)) {
+                layers[currentLayer].markers.forEach(marker => map.removeLayer(marker));
+                layers[currentLayer].markers = [];
+                layers[currentLayer].locations = [];
+                updateLayerTabs();
+                updateLocationList();
+                showStatus(`Cleared all locations from "${currentLayer}"`, 'success');
+            }
+        }
+        
+        function updateLayerInfo() {
+            const currentLayerData = layers[currentLayer];
+            const infoDiv = document.getElementById('layerInfo');
+            
+            if (currentLayerData.isGM) {
+                infoDiv.innerHTML = '<strong>🔒 GM Layer:</strong> Locations on this layer are for your eyes only. Perfect for hidden plot elements, secret locations, and surprise encounters.';
+                infoDiv.className = 'layer-info gm-warning';
+            } else {
+                infoDiv.innerHTML = '<strong>👁️ Player Layer:</strong> Locations on this layer can be shared with your players. Great for known locations and public information.';
+                infoDiv.className = 'layer-info';
+            }
+        }
+        
+        // Search for an address using Nominatim
+        async function searchAddress() {
+            const address = document.getElementById('addressInput').value.trim();
+            if (!address) {
+                showStatus('Please enter an address to search', 'error');
+                return;
+            }
+            
+            showStatus('Searching for address...', 'success');
+            
+            try {
+                // Use address as-is for global search
+const searchQuery = address;
+                
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&addressdetails=1`, {
+                    headers: {
+                        'User-Agent': 'Miami-Superhero-TTRPG-Map/1.0'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    const lat = parseFloat(result.lat);
+                    const lon = parseFloat(result.lon);
+                    
+                    // Remove previous search marker
+                    if (currentSearchMarker) {
+                        map.removeLayer(currentSearchMarker);
+                    }
+                    
+                    // Add temporary search marker
+                    currentSearchMarker = L.marker([lat, lon], {
+                        icon: L.divIcon({
+                            className: 'search-marker',
+                            html: '<div style="background: #28a745; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>',
+                            iconSize: [25, 25],
+                            iconAnchor: [12.5, 12.5]
+                        })
+                    }).addTo(map);
+                    
+                    // Center map on the found location
+                    map.setView([lat, lon], 16);
+                    
+                    currentSearchMarker.bindPopup(`
+                        <div style="text-align: center;">
+                            <strong>${result.display_name}</strong><br>
+                            <small>Click "Add to Current Layer" to save this location</small>
+                        </div>
+                    `).openPopup();
+                    
+                    showStatus(`Found: ${result.display_name}`, 'success');
+                } else {
+                    showStatus('Address not found. Try a more specific address.', 'error');
+                }
+            } catch (error) {
+                showStatus('Error searching for address. Please try again.', 'error');
+                console.error('Search error:', error);
+            }
+        }
+
+                // Center map on a specific city
+        async function centerOnCity() {
+            const city = document.getElementById('cityInput').value.trim();
+            if (!city) {
+                showStatus('Please enter a city name', 'error');
+                return;
+            }
+            
+            showStatus('Finding city...', 'success');
+            
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=1&addressdetails=1`, {
+                    headers: {
+                        'User-Agent': 'Global-TTRPG-Map/1.0'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    const lat = parseFloat(result.lat);
+                    const lon = parseFloat(result.lon);
+                    
+                    // Center map on the city with appropriate zoom
+                    map.setView([lat, lon], 11);
+                    showStatus(`Centered on ${result.display_name}`, 'success');
+                } else {
+                    showStatus('City not found. Try a more specific name.', 'error');
+                }
+            } catch (error) {
+                showStatus('Error finding city. Please try again.', 'error');
+                console.error('City search error:', error);
+            }
+        }
+        
+        // Create custom icon based on category
+        function createCategoryIcon(category) {
+            const style = markerStyles[category] || markerStyles.neutral;
+            
+            // Check if custom icon exists for this category
+            if (customIcons[category]) {
+                return L.icon({
+                    iconUrl: customIcons[category],
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15],
+                    popupAnchor: [0, -15]
+                });
+            }
+            
+            // Use default emoji icon
+            return L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="background: ${style.color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 16px;">${style.emoji}</div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+        }
+
+        // Add the current search location as a permanent marker
+        function addCurrentLocation() {
+            const name = document.getElementById('locationName').value.trim();
+            const description = document.getElementById('locationDescription').value.trim();
+            const category = document.getElementById('markerCategory').value;
+            
+            if (!name) {
+                showStatus('Please enter a location name', 'error');
+                return;
+            }
+            
+            if (!currentSearchMarker) {
+                showStatus('Please search for an address first', 'error');
+                return;
+            }
+            
+            const latLng = currentSearchMarker.getLatLng();
+            const categoryStyle = markerStyles[category];
+            const currentLayerData = layers[currentLayer];
+            
+            // Create permanent marker with category-specific icon
+            const marker = L.marker([latLng.lat, latLng.lng], { 
+                icon: createCategoryIcon(category),
+                draggable: true
+            }).addTo(map);
+            
+            // Add drag event handler
+            marker.on('dragend', function(e) {
+                const newLatLng = e.target.getLatLng();
+                location.lat = newLatLng.lat;
+                location.lng = newLatLng.lng;
+                
+                // Update popup with new coordinates
+                updateMarkerPopup(marker, location, currentLayerData);
+                updateLocationList();
+                showStatus(`Moved "${location.name}" to new position`, 'success');
+            });
+            
+            // Add click handler for bulk select mode
+            marker.on('click', function(e) {
+                if (bulkSelectMode) {
+                    e.originalEvent.stopPropagation();
+                    toggleLocationSelection(location.id);
+                } else if (distanceMode) {
+                    handleDistanceClick(e.latlng);
+                }
+            });
+            
+            const layerLabel = currentLayerData.isGM ? '🔒 GM Only' : '👁️ Player Visible';
+            
+            marker.bindPopup(`
+                <div style="text-align: center; min-width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: ${categoryStyle.color};">${categoryStyle.emoji} ${name}</h4>
+                    <div style="background: ${categoryStyle.color}20; padding: 5px 10px; border-radius: 15px; margin-bottom: 5px; font-size: 12px; font-weight: 600; color: ${categoryStyle.color};">${categoryStyle.name}</div>
+                    <div style="background: ${currentLayerData.isGM ? '#f8d7da' : '#d4edda'}; padding: 3px 8px; border-radius: 10px; margin-bottom: 10px; font-size: 11px; font-weight: 600; color: ${currentLayerData.isGM ? '#721c24' : '#155724'};">${layerLabel}</div>
+                    ${description ? `<p style="margin: 0 0 10px 0; color: #666;">${description}</p>` : ''}
+                    <small style="color: #999;">Lat: ${latLng.lat.toFixed(6)}, Lng: ${latLng.lng.toFixed(6)}</small>
+                </div>
+            `);
+            
+            // Store location data in current layer
+            const location = {
+                id: Date.now(),
+                name: name,
+                description: description,
+                category: category,
+                lat: latLng.lat,
+                lng: latLng.lng,
+                layer: currentLayer
+            };
+            
+            currentLayerData.locations.push(location);
+            currentLayerData.markers.push(marker);
+            
+            // Remove search marker
+            map.removeLayer(currentSearchMarker);
+            currentSearchMarker = null;
+            
+            // Clear inputs
+            document.getElementById('locationName').value = '';
+            document.getElementById('locationDescription').value = '';
+            document.getElementById('addressInput').value = '';
+            
+            // Update displays
+            updateLayerTabs();
+            updateLocationList();
+            
+            showStatus(`Added "${name}" to ${currentLayer} layer!`, 'success');
+        }
+        
+// Map style changer
+function changeMapStyle() {
+    const mapStyle = document.getElementById('mapStyle').value;
+    
+    // Remove existing tile layer
+    map.eachLayer(function(layer) {
+        if (layer._url) { // This identifies tile layers
+            map.removeLayer(layer);
+        }
+    });
+    
+    // Add new tile layer based on selection
+    let tileLayer;
+    switch(mapStyle) {
+        case 'satellite':
+            tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri'
+            });
+            break;
+        case 'terrain':
+            tileLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenTopoMap'
+            });
+            break;
+case 'toner':
+    tileLayer = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+        attribution: '© CartoDB'
+    });
+    break;
+        default: // osm
+            tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            });
+    }
+    
+    tileLayer.addTo(map);
+    showStatus(`Switched to ${mapStyle} map style`, 'success');
+}
+
+        // Update the location list display
+        function updateLocationList() {
+            const listContainer = document.getElementById('locationList');
+            const currentLayerData = layers[currentLayer];
+            
+            // Filter locations based on active filter
+            const filteredLocations = activeFilter === 'all' 
+                ? currentLayerData.locations 
+                : currentLayerData.locations.filter(loc => loc.category === activeFilter);
+            
+            if (filteredLocations.length === 0) {
+                const message = activeFilter === 'all' 
+                    ? `No locations in "${currentLayer}" layer yet. Search for an address and add your first location!`
+                    : `No ${markerStyles[activeFilter]?.name || 'locations'} found in this layer.`;
+                listContainer.innerHTML = `<p style="color: #666; font-style: italic;">${message}</p>`;
+                return;
+            }
+            
+            listContainer.innerHTML = filteredLocations.map((location, index) => {
+                const categoryStyle = markerStyles[location.category] || markerStyles.neutral;
+                const isSelected = selectedLocations.includes(location.id);
+                const selectedClass = isSelected ? 'selected' : '';
+                const selectionIndicator = bulkSelectMode ? (isSelected ? '☑️' : '☐') : '';
+                
+                return `
+                    <div class="location-item ${selectedClass}" ${bulkSelectMode ? `onclick="toggleLocationSelection(${location.id})"` : ''}>
+                        <div class="location-name">
+                            ${selectionIndicator} ${categoryStyle.emoji} ${location.name}
+                            <span class="category-badge ${location.category}">${categoryStyle.name}</span>
+                        </div>
+                        <div class="location-description">${location.description || 'No description'}</div>
+                        <div class="location-coords">Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}</div>
+                        ${!bulkSelectMode ? `
+                        <div class="location-actions">
+                            <select class="layer-copy-select" id="copySelect_${location.id}">
+                                <option value="">Copy/Move to layer...</option>
+                                ${Object.keys(layers).filter(name => name !== currentLayer).map(name => 
+                                    `<option value="${name}">${layers[name].isGM ? '🔒' : '👁️'} ${name}</option>`
+                                ).join('')}
+                            </select>
+                            <button class="btn-small btn-success" onclick="copyLocationToLayer(${location.id})">📋 Copy</button>
+                            <button class="btn-small btn-warning" onclick="moveLocationToLayer(${location.id})">🔄 Move</button>
+                            <button class="btn-small" onclick="editLocationDetails(${location.id})">✏️ Edit</button>
+                            <button class="btn-small btn-danger" onclick="removeLocation(${location.id})">🗑️</button>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Copy a location to another layer
+        function copyLocationToLayer(locationId) {
+            const selectElement = document.getElementById(`copySelect_${locationId}`);
+            const targetLayer = selectElement.value;
+            
+            if (!targetLayer) {
+                showStatus('Please select a layer to copy to', 'error');
+                return;
+            }
+            
+            const currentLayerData = layers[currentLayer];
+            const targetLayerData = layers[targetLayer];
+            const locationIndex = currentLayerData.locations.findIndex(loc => loc.id === locationId);
+            
+            if (locationIndex === -1) {
+                showStatus('Location not found', 'error');
+                return;
+            }
+            
+            const originalLocation = currentLayerData.locations[locationIndex];
+            
+            // Check if location already exists in target layer
+            const existsInTarget = targetLayerData.locations.some(loc => 
+                loc.name === originalLocation.name && 
+                Math.abs(loc.lat - originalLocation.lat) < 0.000001 && 
+                Math.abs(loc.lng - originalLocation.lng) < 0.000001
+            );
+            
+            if (existsInTarget) {
+                showStatus(`"${originalLocation.name}" already exists in ${targetLayer}`, 'error');
+                return;
+            }
+            
+            // Create a copy with new ID
+            const copiedLocation = {
+                ...originalLocation,
+                id: Date.now(),
+                layer: targetLayer
+            };
+            
+            // Create marker for target layer
+            const marker = L.marker([copiedLocation.lat, copiedLocation.lng], { 
+                icon: createCategoryIcon(copiedLocation.category)
+            });
+            
+            const targetLayerStyle = targetLayerData.isGM ? '🔒 GM Only' : '👁️ Player Visible';
+            const categoryStyle = markerStyles[copiedLocation.category];
+            
+            marker.bindPopup(`
+                <div style="text-align: center; min-width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: ${categoryStyle.color};">${categoryStyle.emoji} ${copiedLocation.name}</h4>
+                    <div style="background: ${categoryStyle.color}20; padding: 5px 10px; border-radius: 15px; margin-bottom: 5px; font-size: 12px; font-weight: 600; color: ${categoryStyle.color};">${categoryStyle.name}</div>
+                    <div style="background: ${targetLayerData.isGM ? '#f8d7da' : '#d4edda'}; padding: 3px 8px; border-radius: 10px; margin-bottom: 10px; font-size: 11px; font-weight: 600; color: ${targetLayerData.isGM ? '#721c24' : '#155724'};">${targetLayerData.isGM ? '🔒 GM Only' : '👁️ Player Visible'}</div>
+                    ${copiedLocation.description ? `<p style="margin: 0 0 10px 0; color: #666;">${copiedLocation.description}</p>` : ''}
+                    <small style="color: #999;">Lat: ${copiedLocation.lat.toFixed(6)}, Lng: ${copiedLocation.lng.toFixed(6)}</small>
+                </div>
+            `);
+            
+            // Add to target layer
+            targetLayerData.locations.push(copiedLocation);
+            targetLayerData.markers.push(marker);
+            
+            // Show marker if target layer is visible
+            if (targetLayerData.visible) {
+                marker.addTo(map);
+            }
+            
+            // Reset select and update displays
+            selectElement.value = '';
+            updateLayerTabs();
+            updateLocationList();
+            
+            showStatus(`Copied "${originalLocation.name}" to ${targetLayer}`, 'success');
+        }
+        
+// Distance measurement tool
+function toggleDistanceTool() {
+    distanceMode = !distanceMode;
+    const btn = document.querySelector('[onclick="toggleDistanceTool()"]');
+    
+    if (distanceMode) {
+        btn.textContent = '📏 Exit Distance Mode';
+        btn.classList.add('active');
+        showStatus('Distance mode ON. Click two points to measure distance. Press ESC to exit.', 'success');
+        clearDistanceLines();
+        distanceStart = null;
+    } else {
+        btn.textContent = '📏 Distance Tool';
+        btn.classList.remove('active');
+        showStatus('Distance mode OFF', 'success');
+        clearDistanceLines();
+        distanceStart = null;
+    }
+}
+
+function handleDistanceClick(latlng) {
+    if (!distanceMode) return;
+    
+    if (!distanceStart) {
+        // First click - set start point
+        distanceStart = latlng;
+        
+        // Add start marker
+        const startMarker = L.circleMarker(latlng, {
+            color: '#ff0000',
+            radius: 8,
+            fillOpacity: 0.8
+        }).addTo(map);
+        
+        distanceLines.push(startMarker);
+        showStatus('Click second point to measure distance', 'success');
+    } else {
+        // Second click - calculate distance
+        const distance = map.distance(distanceStart, latlng);
+        const distanceKm = (distance / 1000).toFixed(2);
+        const distanceMiles = (distance * 0.000621371).toFixed(2);
+        
+        // Add end marker
+        const endMarker = L.circleMarker(latlng, {
+            color: '#ff0000',
+            radius: 8,
+            fillOpacity: 0.8
+        }).addTo(map);
+        
+        // Add line between points
+        const line = L.polyline([distanceStart, latlng], {
+            color: '#ff0000',
+            weight: 3,
+            opacity: 0.8
+        }).addTo(map);
+        
+        // Add distance popup
+        const midpoint = L.latLng(
+            (distanceStart.lat + latlng.lat) / 2,
+            (distanceStart.lng + latlng.lng) / 2
+        );
+        
+        const popup = L.popup()
+            .setLatLng(midpoint)
+            .setContent(`<strong>Distance:</strong><br>${distanceKm} km<br>${distanceMiles} miles`)
+            .openOn(map);
+        
+        distanceLines.push(endMarker, line, popup);
+        
+        showStatus(`Distance: ${distanceKm} km (${distanceMiles} miles)`, 'success');
+        
+        // Reset for next measurement
+        distanceStart = null;
+    }
+}
+
+function clearDistanceLines() {
+    distanceLines.forEach(item => {
+        if (item) map.removeLayer(item);
+    });
+    distanceLines = [];
+}
+
+        // Move a location to another layer
+        function moveLocationToLayer(locationId) {
+            const selectElement = document.getElementById(`copySelect_${locationId}`);
+            const targetLayer = selectElement.value;
+            
+            if (!targetLayer) {
+                showStatus('Please select a layer to move to', 'error');
+                return;
+            }
+            
+            const currentLayerData = layers[currentLayer];
+            const targetLayerData = layers[targetLayer];
+            const locationIndex = currentLayerData.locations.findIndex(loc => loc.id === locationId);
+            
+            if (locationIndex === -1) {
+                showStatus('Location not found', 'error');
+                return;
+            }
+            
+            const location = currentLayerData.locations[locationIndex];
+            const marker = currentLayerData.markers[locationIndex];
+            
+            // Check if location already exists in target layer
+            const existsInTarget = targetLayerData.locations.some(loc => 
+                loc.name === location.name && 
+                Math.abs(loc.lat - location.lat) < 0.000001 && 
+                Math.abs(loc.lng - location.lng) < 0.000001
+            );
+            
+            if (existsInTarget) {
+                showStatus(`"${location.name}" already exists in ${targetLayer}`, 'error');
+                return;
+            }
+            
+            // Remove from current layer
+            currentLayerData.locations.splice(locationIndex, 1);
+            currentLayerData.markers.splice(locationIndex, 1);
+            map.removeLayer(marker);
+            
+            // Update location layer property
+            location.layer = targetLayer;
+            
+            // Update marker popup to reflect new layer
+            const targetLayerStyle = targetLayerData.isGM ? '🔒 GM Only' : '👁️ Player Visible';
+            const categoryStyle = markerStyles[location.category];
+            
+            marker.bindPopup(`
+                <div style="text-align: center; min-width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: ${categoryStyle.color};">${categoryStyle.emoji} ${location.name}</h4>
+                    <div style="background: ${categoryStyle.color}20; padding: 5px 10px; border-radius: 15px; margin-bottom: 5px; font-size: 12px; font-weight: 600; color: ${categoryStyle.color};">${categoryStyle.name}</div>
+                    <div style="background: ${targetLayerData.isGM ? '#f8d7da' : '#d4edda'}; padding: 3px 8px; border-radius: 10px; margin-bottom: 10px; font-size: 11px; font-weight: 600; color: ${targetLayerData.isGM ? '#721c24' : '#155724'};">${targetLayerData.isGM ? '🔒 GM Only' : '👁️ Player Visible'}</div>
+                    ${location.description ? `<p style="margin: 0 0 10px 0; color: #666;">${location.description}</p>` : ''}
+                    <small style="color: #999;">Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}</small>
+                </div>
+            `);
+            
+            // Add to target layer
+            targetLayerData.locations.push(location);
+            targetLayerData.markers.push(marker);
+            
+            // Show marker if target layer is visible
+            if (targetLayerData.visible) {
+                marker.addTo(map);
+            }
+            
+            // Reset select and update displays
+            selectElement.value = '';
+            updateLayerTabs();
+            updateLocationList();
+            
+            showStatus(`Moved "${location.name}" to ${targetLayer}`, 'success');
+        }
+
+        // Remove a specific location
+        function removeLocation(locationId) {
+            const currentLayerData = layers[currentLayer];
+            const locationIndex = currentLayerData.locations.findIndex(loc => loc.id === locationId);
+            if (locationIndex === -1) return;
+            
+            // Remove marker from map
+            const markerIndex = locationIndex;
+            if (currentLayerData.markers[markerIndex]) {
+                map.removeLayer(currentLayerData.markers[markerIndex]);
+                currentLayerData.markers.splice(markerIndex, 1);
+            }
+            
+            // Remove from locations array
+            const locationName = currentLayerData.locations[locationIndex].name;
+            currentLayerData.locations.splice(locationIndex, 1);
+            
+            updateLayerTabs();
+            updateLocationList();
+            showStatus(`Removed "${locationName}" from ${currentLayer}`, 'success');
+        }
+        
+        // Export location data
+        function exportData() {
+            const totalLocations = Object.values(layers).reduce((total, layer) => total + layer.locations.length, 0);
+            
+            if (totalLocations === 0) {
+                showStatus('No locations to export', 'error');
+                return;
+            }
+            
+            const exportData = {
+                title: "Miami Superhero Locations with Layers",
+                created: new Date().toISOString(),
+                version: "2.0",
+                mapCenter: map.getCenter(),
+                mapZoom: map.getZoom(),
+                customIcons: customIcons,
+                layers: {}
+            };
+            
+            // Export each layer separately
+            Object.keys(layers).forEach(layerName => {
+                const layer = layers[layerName];
+                exportData.layers[layerName] = {
+                    isGM: layer.isGM,
+                    visible: layer.visible,
+                    locations: layer.locations
+                };
+            });
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = 'miami-superhero-layers.json';
+            link.click();
+            
+            showStatus(`Exported ${totalLocations} locations across ${Object.keys(layers).length} layers!`, 'success');
+        }
+        
+        // Show status messages
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 4000);
+        }
+        
+        // Update marker popup content
+        function updateMarkerPopup(marker, location, layerData) {
+            const categoryStyle = markerStyles[location.category];
+            const layerLabel = layerData.isGM ? '🔒 GM Only' : '👁️ Player Visible';
+            
+            marker.bindPopup(`
+                <div style="text-align: center; min-width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: ${categoryStyle.color};">${categoryStyle.emoji} ${location.name}</h4>
+                    <div style="background: ${categoryStyle.color}20; padding: 5px 10px; border-radius: 15px; margin-bottom: 5px; font-size: 12px; font-weight: 600; color: ${categoryStyle.color};">${categoryStyle.name}</div>
+                    <div style="background: ${layerData.isGM ? '#f8d7da' : '#d4edda'}; padding: 3px 8px; border-radius: 10px; margin-bottom: 10px; font-size: 11px; font-weight: 600; color: ${layerData.isGM ? '#721c24' : '#155724'};">${layerLabel}</div>
+                    ${location.description ? `<p style="margin: 0 0 10px 0; color: #666;">${location.description}</p>` : ''}
+                    <small style="color: #999;">Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}</small>
+                    <br><small style="color: #007bff; cursor: pointer;" onclick="editLocationDetails('${location.id}')">✏️ Edit Details</small>
+                </div>
+            `);
+        }
+        
+        // Import data functionality
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (!importedData.layers) {
+                        showStatus('Invalid file format. Missing layers data.', 'error');
+                        return;
+                    }
+                    
+                    // Clear existing data
+                    Object.values(layers).forEach(layer => {
+                        layer.markers.forEach(marker => map.removeLayer(marker));
+                    });
+                    
+                    // Import layers
+                    layers = {};
+                    Object.keys(importedData.layers).forEach(layerName => {
+                        const layerData = importedData.layers[layerName];
+                        layers[layerName] = {
+                            markers: [],
+                            locations: layerData.locations || [],
+                            visible: layerData.visible !== false,
+                            isGM: layerData.isGM || false
+                        };
+                        
+                        // Recreate markers
+                        layerData.locations.forEach(location => {
+                            const marker = L.marker([location.lat, location.lng], { 
+                                icon: createCategoryIcon(location.category),
+                                draggable: true
+                            });
+                            
+                            marker.on('dragend', function(e) {
+                                const newLatLng = e.target.getLatLng();
+                                location.lat = newLatLng.lat;
+                                location.lng = newLatLng.lng;
+                                updateMarkerPopup(marker, location, layers[layerName]);
+                                updateLocationList();
+                            });
+                            
+                            marker.on('click', function(e) {
+                                if (bulkSelectMode) {
+                                    e.originalEvent.stopPropagation();
+                                    toggleLocationSelection(location.id);
+                                } else if (distanceMode) {
+                                    handleDistanceClick(e.latlng);
+                                }
+                            });
+
+                            
+                            
+                            updateMarkerPopup(marker, location, layers[layerName]);
+                            layers[layerName].markers.push(marker);
+                            
+                            if (layers[layerName].visible) {
+                                marker.addTo(map);
+                            }
+                        });
+                    });
+                    
+                    // Set current layer to first available
+                    currentLayer = Object.keys(layers)[0] || 'Player View';
+                    
+                    // Import custom icons if they exist
+                    if (importedData.customIcons) {
+                        customIcons = importedData.customIcons;
+                    }
+                    
+                    updateLayerTabs();
+                    updateLocationList();
+                    updateLayerInfo();
+                    
+                    const totalLocations = Object.values(layers).reduce((total, layer) => total + layer.locations.length, 0);
+                    showStatus(`Imported ${totalLocations} locations across ${Object.keys(layers).length} layers!`, 'success');
+                    
+                } catch (error) {
+                    showStatus('Error importing file. Please check the file format.', 'error');
+                    console.error('Import error:', error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+                // Custom icon upload
+        function uploadCustomIcon(event) {
+            const file = event.target.files[0];
+            const category = document.getElementById('iconCategory').value;
+            
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showStatus('Please select an image file', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customIcons[category] = e.target.result;
+                
+                // Update all existing markers of this category
+                Object.values(layers).forEach(layer => {
+                    layer.locations.forEach((location, index) => {
+                        if (location.category === category) {
+                            const marker = layer.markers[index];
+                            marker.setIcon(createCategoryIcon(category));
+                        }
+                    });
+                });
+                
+                showStatus(`Custom icon uploaded for ${markerStyles[category].name}`, 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Reset category icon to default
+        function resetCategoryIcon() {
+            const category = document.getElementById('iconCategory').value;
+            delete customIcons[category];
+            
+            // Update all existing markers of this category
+            Object.values(layers).forEach(layer => {
+                layer.locations.forEach((location, index) => {
+                    if (location.category === category) {
+                        const marker = layer.markers[index];
+                        marker.setIcon(createCategoryIcon(category));
+                    }
+                });
+            });
+            
+            showStatus(`Reset ${markerStyles[category].name} to default icon`, 'success');
+        }
+        
+        // Search locations by name
+        function searchLocations() {
+            const query = document.getElementById('locationSearchInput').value.toLowerCase().trim();
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (!query) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+            
+            let allResults = [];
+            Object.keys(layers).forEach(layerName => {
+                const layer = layers[layerName];
+                const matches = layer.locations.filter(loc => 
+                    loc.name.toLowerCase().includes(query) || 
+                    (loc.description && loc.description.toLowerCase().includes(query))
+                );
+                
+                matches.forEach(match => {
+                    allResults.push({...match, layerName});
+                });
+            });
+            
+            if (allResults.length === 0) {
+                resultsContainer.innerHTML = '<p style="color: #666; font-style: italic;">No locations found</p>';
+                return;
+            }
+            
+            resultsContainer.innerHTML = allResults.map(result => {
+                const categoryStyle = markerStyles[result.category];
+                const layerInfo = layers[result.layerName];
+                return `
+                    <div class="location-item search-highlight" onclick="focusOnLocation('${result.layerName}', ${result.id})">
+                        <div class="location-name">
+                            ${categoryStyle.emoji} ${result.name}
+                            <span class="category-badge ${result.category}">${categoryStyle.name}</span>
+                        </div>
+                        <div class="location-description">${result.description || 'No description'}</div>
+                        <small style="color: #999;">Layer: ${layerInfo.isGM ? '🔒' : '👁️'} ${result.layerName}</small>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Focus on a specific location
+        function focusOnLocation(layerName, locationId) {
+            const layer = layers[layerName];
+            const location = layer.locations.find(loc => loc.id === locationId);
+            const markerIndex = layer.locations.findIndex(loc => loc.id === locationId);
+            
+            if (location && markerIndex !== -1) {
+                // Switch to the layer
+                currentLayer = layerName;
+                updateLayerTabs();
+                updateLocationList();
+                updateLayerInfo();
+                
+                // Center map on location
+                map.setView([location.lat, location.lng], 16);
+                
+                // Open marker popup
+                const marker = layer.markers[markerIndex];
+                if (marker && layer.visible) {
+                    marker.openPopup();
+                }
+                
+                showStatus(`Focused on "${location.name}" in ${layerName}`, 'success');
+            }
+        }
+
+        // Edit location details (enhanced)
+        function editLocationDetails(locationId) {
+            const currentLayerData = layers[currentLayer];
+            const location = currentLayerData.locations.find(loc => loc.id == locationId);
+            const markerIndex = currentLayerData.locations.findIndex(loc => loc.id == locationId);
+            
+            if (!location) return;
+            
+            const newName = prompt('Location Name:', location.name);
+            if (newName === null) return; // User cancelled
+            
+            const newDescription = prompt('Description:', location.description || '');
+            if (newDescription === null) return; // User cancelled
+            
+            const newCategory = prompt(`Category (${Object.keys(markerStyles).join(', ')}):`, location.category);
+            if (newCategory === null) return; // User cancelled
+            
+            if (!markerStyles[newCategory]) {
+                showStatus('Invalid category', 'error');
+                return;
+            }
+            
+            // Update location
+            location.name = newName.trim() || location.name;
+            location.description = newDescription.trim();
+            location.category = newCategory;
+            
+            // Update marker icon if category changed
+            const marker = currentLayerData.markers[markerIndex];
+            marker.setIcon(createCategoryIcon(location.category));
+            
+            // Update popup
+            updateMarkerPopup(marker, location, currentLayerData);
+            
+            updateLocationList();
+            showStatus(`Updated "${location.name}"`, 'success');
+        }
+        
+        // Generate share link
+        function generateShareLink() {
+            const shareData = {
+                center: map.getCenter(),
+                zoom: map.getZoom(),
+                layers: {}
+            };
+            
+            // Include only non-GM layers for sharing
+            Object.keys(layers).forEach(layerName => {
+                const layer = layers[layerName];
+                if (!layer.isGM) {
+                    shareData.layers[layerName] = {
+                        locations: layer.locations,
+                        visible: layer.visible,
+                        isGM: false
+                    };
+                }
+            });
+            
+            const encodedData = encodeURIComponent(JSON.stringify(shareData));
+            const shareUrl = `${window.location.origin}${window.location.pathname}?data=${encodedData}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showStatus('Share link copied to clipboard! (Note: Only player-visible layers are included)', 'success');
+            }).catch(() => {
+                // Fallback for browsers that don't support clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = shareUrl;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showStatus('Share link copied to clipboard! (Note: Only player-visible layers are included)', 'success');
+            });
+        }
+        
+
+// Load shared data from URL parameters
+function loadSharedData() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('data');
+    
+    if (sharedData) {
+        try {
+            const shareData = JSON.parse(decodeURIComponent(sharedData));
+            
+            // Clear existing layers except keep the structure
+            Object.values(layers).forEach(layer => {
+                layer.markers.forEach(marker => map.removeLayer(marker));
+            });
+            
+            // Load shared layers
+            layers = {};
+            Object.keys(shareData.layers).forEach(layerName => {
+                const layerData = shareData.layers[layerName];
+                layers[layerName] = {
+                    markers: [],
+                    locations: layerData.locations || [],
+                    visible: layerData.visible !== false,
+                    isGM: false // Shared layers are never GM
+                };
+                
+                // Recreate markers
+                layerData.locations.forEach(location => {
+                    const marker = L.marker([location.lat, location.lng], { 
+                        icon: createCategoryIcon(location.category)
+                    });
+                    
+                    updateMarkerPopup(marker, location, layers[layerName]);
+                    layers[layerName].markers.push(marker);
+                    
+                    if (layers[layerName].visible) {
+                        marker.addTo(map);
+                    }
+                });
+            });
+            
+            // Set map view
+            if (shareData.center && shareData.zoom) {
+                map.setView([shareData.center.lat, shareData.center.lng], shareData.zoom);
+            }
+            
+            // Set current layer
+            currentLayer = Object.keys(layers)[0] || 'Player View';
+            
+            updateLayerTabs();
+            updateLocationList();
+            updateLayerInfo();
+            
+            showStatus('Shared map loaded successfully!', 'success');
+        } catch (error) {
+            showStatus('Error loading shared map data', 'error');
+            console.error('Share load error:', error);
+        }
+    }
+}
+
+        // Print-friendly view
+        function printView() {
+            document.body.classList.add('print-view');
+            showStatus('Print view activated. Use Ctrl+P to print. Click anywhere to exit print view.', 'success');
+            
+            // Add click listener to exit print view
+            const exitPrintView = function() {
+                document.body.classList.remove('print-view');
+                document.removeEventListener('click', exitPrintView);
+                map.invalidateSize();
+            };
+            
+            setTimeout(() => {
+                document.addEventListener('click', exitPrintView);
+            }, 100);
+            
+            // Trigger map resize for print view
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+        
+        // Allow Enter key to search
+        document.getElementById('addressInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchAddress();
+            }
+            
+        });
+        
+        // Toggle filter for location types
+        function toggleFilter(filterType) {
+            activeFilter = filterType;
+            
+            // Update filter button appearance
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update location list
+            updateLocationList();
+            
+            // Show/hide markers on map based on filter (only for current visible layers)
+            Object.keys(layers).forEach(layerName => {
+                const layer = layers[layerName];
+                if (!layer.visible) return;
+                
+                layer.markers.forEach((marker, index) => {
+                    const location = layer.locations[index];
+                    if (filterType === 'all' || location.category === filterType) {
+                        marker.addTo(map);
+                    } else {
+                        map.removeLayer(marker);
+                    }
+                });
+            });
+        }
+        
+// Initialize the application
+function initializeApp() {
+    updateLayerTabs();
+    updateLocationList();
+    updateLayerInfo();
+    
+    // Load shared data if present in URL
+    loadSharedData();
+            
+            // Add escape key handler for distance mode
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (distanceMode) {
+                        toggleDistanceTool();
+                    }
+                    if (bulkSelectMode) {
+                        toggleBulkSelect();
+                    }
+                }
+            });
+            
+            // Trigger initial map resize
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+        
+        // Initialize when page loads
+        initializeApp();
+        
+        // Add some example locations to get started
+        setTimeout(() => {
+            // Check if this is a shared map
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasSharedData = urlParams.get('data');
+            
+            if (!hasSharedData) {
+                showStatus('Welcome! Try these new features: 📏 Distance tool, ☑️ Bulk select, 🛰️ Map styles, 🔗 Share links, and more!', 'success');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
