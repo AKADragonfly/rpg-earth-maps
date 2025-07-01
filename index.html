@@ -501,7 +501,7 @@
             </div>
             
             <div class="sidebar-header">
-                <h1>🦸 Miami Superhero Map</h1>
+                <h1>🦸 RPG Earth Maps</h1>
                 <p class="subtitle">Advanced TTRPG Location Manager</p>
             </div>
             
@@ -1492,7 +1492,7 @@ function clearDistanceLines() {
             }
             
             const exportData = {
-                title: "Miami Superhero Locations with Layers",
+                title: "RPG Earth Maps Locations with Layers",
                 created: new Date().toISOString(),
                 version: "2.0",
                 mapCenter: map.getCenter(),
@@ -1516,7 +1516,7 @@ function clearDistanceLines() {
             
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
-            link.download = 'miami-superhero-layers.json';
+            link.download = 'rpg-earth-maps-layers.json';
             link.click();
             
             showStatus(`Exported ${totalLocations} locations across ${Object.keys(layers).length} layers!`, 'success');
